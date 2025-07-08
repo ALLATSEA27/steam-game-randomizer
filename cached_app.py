@@ -162,6 +162,63 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Add CSS for mobile responsiveness and sidebar control
+st.markdown("""
+<style>
+    /* Hide sidebar by default on mobile */
+    @media (max-width: 768px) {
+        .css-1d391kg {
+            display: none !important;
+        }
+        .css-1d391kg.e1fqkh3o1 {
+            display: none !important;
+        }
+        /* Ensure main content takes full width on mobile */
+        .main .block-container {
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+            max-width: 100% !important;
+        }
+    }
+    
+    /* Improve button sizing on mobile */
+    @media (max-width: 768px) {
+        .stButton > button {
+            width: 100% !important;
+            height: 3rem !important;
+            font-size: 1.2rem !important;
+        }
+    }
+    
+    /* Better text sizing on mobile */
+    @media (max-width: 768px) {
+        .stMarkdown {
+            font-size: 0.9rem !important;
+        }
+        h1 {
+            font-size: 1.5rem !important;
+        }
+        h2 {
+            font-size: 1.3rem !important;
+        }
+        h3 {
+            font-size: 1.1rem !important;
+        }
+    }
+    
+    /* Improve column layout on mobile */
+    @media (max-width: 768px) {
+        .row-widget.stHorizontal {
+            flex-direction: column !important;
+        }
+        .row-widget.stHorizontal > div {
+            width: 100% !important;
+            margin-bottom: 1rem !important;
+        }
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize session state variables
 if 'games' not in st.session_state:
     st.session_state.games = None
@@ -219,6 +276,9 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
 
     # Note about sidebar
     st.info("💡 **Tip:** Use the sidebar for cache management")
+    
+    # Mobile note
+    st.info("📱 **Mobile users:** Tap the ☰ menu in the top-left to access sidebar controls")
 
     # Show game count if games are loaded
     if st.session_state.games:
