@@ -558,6 +558,39 @@ if st.session_state.games:
 with st.sidebar:
     st.header("🗂️ Cache Management")
     
+    # Theme toggle
+    st.markdown("---")
+    st.markdown("**🎨 Theme:**")
+    theme = st.selectbox("Choose theme:", ["Dark", "Light"], index=0)
+    
+    # Apply theme using CSS
+    if theme == "Dark":
+        st.markdown("""
+        <style>
+        .stApp {
+            background-color: #0E1117;
+            color: #FAFAFA;
+        }
+        .stSidebar {
+            background-color: #262730;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    else:
+        st.markdown("""
+        <style>
+        .stApp {
+            background-color: #FFFFFF;
+            color: #262730;
+        }
+        .stSidebar {
+            background-color: #F0F2F6;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
     # Current status
     if st.session_state.games:
         st.success(f"✅ {len(st.session_state.games)} games loaded")
