@@ -638,6 +638,19 @@ with st.sidebar:
         }
         .stSidebar {
             background-color: #262730;
+            color: #FAFAFA;
+        }
+        .stSidebar .stMarkdown {
+            color: #FAFAFA !important;
+        }
+        .stSidebar .stText {
+            color: #FAFAFA !important;
+        }
+        .stSidebar .stSelectbox {
+            color: #FAFAFA !important;
+        }
+        .stSidebar .stButton {
+            color: #FAFAFA !important;
         }
         </style>
         """, unsafe_allow_html=True)
@@ -650,6 +663,19 @@ with st.sidebar:
         }
         .stSidebar {
             background-color: #F0F2F6;
+            color: #262730;
+        }
+        .stSidebar .stMarkdown {
+            color: #262730 !important;
+        }
+        .stSidebar .stText {
+            color: #262730 !important;
+        }
+        .stSidebar .stSelectbox {
+            color: #262730 !important;
+        }
+        .stSidebar .stButton {
+            color: #262730 !important;
         }
         </style>
         """, unsafe_allow_html=True)
