@@ -2,6 +2,13 @@
 
 A Streamlit app that helps you discover games in your Steam library that you haven't played much. Perfect for when you can't decide what to play!
 
+# 🧠 Why This Exists
+
+We all buy too many games and play too few.
+This tool helps you rediscover what you already own — and maybe even finish it.
+
+    “Play your backlog. You already paid for it.”
+
 ## Features
 
 - 🎯 Randomly select games from your Steam library
