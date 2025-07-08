@@ -105,6 +105,7 @@ def load_game_details_cache(app_id):
     
     return None
 
+# Remove genre/year filter helpers
 def filter_games_by_playtime(games, max_hours):
     """Filter games with less than max_hours of playtime"""
     filtered_games = []
@@ -265,14 +266,14 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
     # Mode selection
     mode = st.radio("Select Mode:", ["Offline Mode", "Online Mode"])
 
-    # SteamID input (needed for both modes)
-    steamid = st.text_input("SteamID64")
-
     # API key input (only for Online Mode)
     if mode == "Online Mode":
         api_key = st.text_input("Steam API Key", type="password")
     else:
         api_key = None
+        
+    # SteamID input (needed for both modes)
+    steamid = st.text_input("SteamID64")
 
     # Note about sidebar
     st.info("💡 **Tip:** Use the sidebar for cache management")
@@ -399,7 +400,7 @@ if st.session_state.games:
     # Configuration in sidebar
     with st.sidebar:
         st.markdown("**🎯 Randomizer Settings:**")
-        max_hours = st.slider("Max playtime (hours)", 0.0, 100.0, 2.0, 0.5)
+        max_hours = st.slider("Max playtime (hours)", 0.0, 100.0, 2.0, 0.5, key="sidebar_max_hours")
         exclude_rolled = st.checkbox("Exclude rolled games", value=st.session_state.exclude_rolled)
         st.session_state.exclude_rolled = exclude_rolled
     
@@ -617,155 +618,4 @@ if st.session_state.games:
                 st.session_state.rolled_games.clear()
                 st.rerun()
         else:
-            st.warning(f"No games found with less than {max_hours} hours of playtime. Try increasing the playtime limit!")
-
-# Sidebar
-with st.sidebar:
-    st.header("🗂️ Cache Management")
-    
-    # Theme toggle
-    st.markdown("---")
-    st.markdown("**🎨 Theme:**")
-    theme = st.selectbox("Choose theme:", ["Dark", "Light"], index=0)
-    
-    # Apply theme using CSS
-    if theme == "Dark":
-        st.markdown("""
-        <style>
-        .stApp {
-            background-color: #0E1117;
-            color: #FAFAFA;
-        }
-        .stSidebar {
-            background-color: #262730;
-            color: #FAFAFA;
-        }
-        .stSidebar .stMarkdown {
-            color: #FAFAFA !important;
-        }
-        .stSidebar .stText {
-            color: #FAFAFA !important;
-        }
-        .stSidebar .stSelectbox {
-            color: #FAFAFA !important;
-        }
-        .stSidebar .stButton {
-            color: #FAFAFA !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-    else:
-        st.markdown("""
-        <style>
-        .stApp {
-            background-color: #FFFFFF;
-            color: #262730;
-        }
-        .stSidebar {
-            background-color: #F0F2F6;
-            color: #262730;
-        }
-        .stSidebar .stMarkdown {
-            color: #262730 !important;
-        }
-        .stSidebar .stText {
-            color: #262730 !important;
-        }
-        .stSidebar .stSelectbox {
-            color: #262730 !important;
-        }
-        .stSidebar .stButton {
-            color: #262730 !important;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-    
-    st.markdown("---")
-    
-    # Current status
-    if st.session_state.games:
-        st.success(f"✅ {len(st.session_state.games)} games loaded")
-    
-    st.markdown("---")
-    
-    # Cache management toggle
-    if st.button("🔧 Cache Tools"):
-        st.session_state.show_cache_sidebar = not st.session_state.show_cache_sidebar
-    
-    if st.session_state.show_cache_sidebar:
-        st.markdown("---")
-        
-        # Cache info
-        cache_dir = "cache"
-        if os.path.exists(cache_dir):
-            game_files = [f for f in os.listdir(cache_dir) if f.startswith("games_")]
-            detail_files = []
-            if os.path.exists(os.path.join(cache_dir, "game_details")):
-                detail_files = os.listdir(os.path.join(cache_dir, "game_details"))
-            
-            st.write(f"**Games cached:** {len(game_files)}")
-            st.write(f"**Game details cached:** {len(detail_files)}")
-        else:
-            st.write("**No cache found**")
-        
-        st.markdown("---")
-        
-        # Cache actions
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            if st.button("🗑️ Clear All"):
-                if os.path.exists("cache"):
-                    import shutil
-                    shutil.rmtree("cache")
-                    st.success("Cache cleared!")
-                    st.rerun()
-                else:
-                    st.info("No cache to clear")
-        
-        with col2:
-            if st.button("📊 Cache Stats"):
-                if os.path.exists(cache_dir):
-                    total_size = 0
-                    file_count = 0
-                    for root, dirs, files in os.walk(cache_dir):
-                        for file in files:
-                            file_path = os.path.join(root, file)
-                            total_size += os.path.getsize(file_path)
-                            file_count += 1
-                    
-                    st.write(f"**Total files:** {file_count}")
-                    st.write(f"**Cache size:** {total_size / 1024 / 1024:.1f} MB")
-                else:
-                    st.write("No cache found")
-        
-        # Refresh options
-        if st.session_state.games:
-            st.markdown("---")
-            st.write("**Refresh Options:**")
-            
-            if mode == "Online Mode":
-                api_key_refresh = st.text_input("API Key (for refresh)", type="password", key="sidebar_refresh_key")
-                if api_key_refresh:
-                    if st.button("🔄 Refresh Details"):
-                        with st.spinner("Refreshing game details..."):
-                            refreshed_count = 0
-                            for game in st.session_state.games[:10]:  # Refresh first 10 games
-                                app_id = game.get('appid')
-                                if app_id:
-                                    fresh_details = get_game_details(app_id)
-                                    if fresh_details:
-                                        save_game_details_cache(fresh_details, app_id)
-                                        refreshed_count += 1
-                            st.success(f"Refreshed {refreshed_count} games!")
-            else:
-                st.info("Switch to Online Mode for refresh options")
-        
-        # Rolled games management
-        if st.session_state.rolled_games:
-            st.markdown("---")
-            st.write(f"**Rolled games:** {len(st.session_state.rolled_games)}")
-            if st.button("🔄 Reset Rolled Games"):
-                st.session_state.rolled_games.clear()
-                st.success("Rolled games reset!")
-                st.rerun() 
+            st.warning(f"No games found with less than {max_hours} hours of playtime. Try increasing the playtime limit!") 
