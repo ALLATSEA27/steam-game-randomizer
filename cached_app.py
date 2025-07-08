@@ -155,7 +155,12 @@ def clean_html_text(html_text):
     return text.strip()
 
 # --- Streamlit App ---
-st.set_page_config(page_title="Steam Game Randomizer (Offline)", page_icon="🎲", layout="wide")
+st.set_page_config(
+    page_title="Steam Game Randomizer (Offline)", 
+    page_icon="🎲", 
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
 
 # Initialize session state variables
 if 'games' not in st.session_state:
