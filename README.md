@@ -30,7 +30,7 @@ A Streamlit app that helps you discover games in your Steam library that you hav
 ### Step 1: Get the Code
 **Option A: Clone the repository (if you have Git)**
 ```bash
-git clone <repository-url>
+git clone git@github.com:ALLATSEA27/steam-game-randomizer.git
 cd steamrecommender
 ```
 
