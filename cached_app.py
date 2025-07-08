@@ -327,6 +327,15 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
     
     # Mobile note
     st.info("📱 **Mobile users:** Tap the ☰ menu in the top-left to access sidebar controls")
+    
+    # Rate limiting disclaimer (only show in Online Mode)
+    if mode == "Online Mode":
+        st.warning("""
+        ⚠️ **Steam API Rate Limits:** 
+        Steam has rate limits on their API. If you encounter errors during bulk operations, 
+        wait a few minutes before trying again. The app will automatically handle individual 
+        game detail requests safely.
+        """)
 
     # Show game count if games are loaded
     if st.session_state.games:
@@ -387,6 +396,7 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
                         st.error(f"Error: {e}")
             
             elif download_all_details and st.session_state.games:
+                st.warning("⚠️ **Note:** This operation may take several minutes and could hit Steam's rate limits. If it fails, wait a few minutes and try again.")
                 with st.spinner("Downloading all game details (this may take a while)..."):
                     try:
                         total_games = len(st.session_state.games)
@@ -430,6 +440,7 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
                         st.error(f"Error during bulk download: {e}")
 
             elif download_all_details_achievements and st.session_state.games:
+                st.warning("⚠️ **Note:** This operation may take several minutes and could hit Steam's rate limits. If it fails, wait a few minutes and try again.")
                 with st.spinner("Downloading all game details and achievements (this may take a while)..."):
                     try:
                         total_games = len(st.session_state.games)
