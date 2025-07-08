@@ -155,6 +155,34 @@ def clean_html_text(html_text):
     
     return text.strip()
 
+def get_achievement_schema(api_key, app_id):
+    """Fetch the achievement schema for a game (list of all achievements)"""
+    url = "https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/"
+    params = {"key": api_key, "appid": app_id}
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            achievements = data.get("game", {}).get("availableGameStats", {}).get("achievements", [])
+            return achievements
+    except Exception as e:
+        st.warning(f"Could not fetch achievement schema: {e}")
+    return None
+
+def get_player_achievements(api_key, steamid, app_id):
+    """Fetch the player's unlocked achievements for a game"""
+    url = "https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/"
+    params = {"key": api_key, "steamid": steamid, "appid": app_id}
+    try:
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            achievements = data.get("playerstats", {}).get("achievements", [])
+            return achievements
+    except Exception as e:
+        st.warning(f"Could not fetch player achievements: {e}")
+    return None
+
 # --- Streamlit App ---
 st.set_page_config(
     page_title="Steam Game Randomizer (Offline)", 
@@ -495,6 +523,17 @@ if st.session_state.games:
                         score = game_details['metacritic']['score']
                         st.write(f"**Metacritic Score:** {score}/100")
                     
+                    # Achievements display (only in Online Mode, with API key and SteamID)
+                    if app_id and api_key and steamid and mode == "Online Mode":
+                        schema = get_achievement_schema(api_key, app_id)
+                        player_achievements = get_player_achievements(api_key, steamid, app_id)
+                        if schema and player_achievements:
+                            total_achievements = len(schema)
+                            completed_achievements = sum(1 for a in player_achievements if a.get("achieved") == 1)
+                            percent = (completed_achievements / total_achievements) * 100 if total_achievements > 0 else 0
+                            st.write(f"**Achievements:** {completed_achievements} / {total_achievements} ({percent:.0f}%)")
+                            st.progress(percent / 100)
+                    
                     # Short description
                     if 'short_description' in game_details:
                         description = game_details['short_description']
@@ -611,6 +650,7 @@ if st.session_state.games:
                 # Store game details in session state for sidebar
                 if game_details:
                     st.session_state.selected_game = game_details
+
     else:
         if exclude_rolled and st.session_state.rolled_games:
             st.warning(f"No more games available with less than {max_hours} hours of playtime. You've rolled all available games!")
