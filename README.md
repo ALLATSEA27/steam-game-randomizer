@@ -8,6 +8,7 @@ A Streamlit app that helps you discover games in your Steam library that you hav
 - ⏱️ Filter by playtime (default: less than 2 hours)
 - 🖼️ Display game images and detailed information
 - 📊 Show game ratings, genres, and system requirements
+- 🏆 **Achievements:** See your total and completed achievements for each game, with a progress bar (Online Mode only)
 - 🔍 View comprehensive game details including DRM, languages, and pricing
 - 💾 **Offline Mode** - Works without internet after initial setup
 - 🗂️ **Smart Caching** - Automatically caches game data for faster loading
@@ -127,6 +128,19 @@ deactivate
 6. **Click "🔄 Fetch Fresh Data"** to load your game library
 7. **Optionally click "📥 Download All Game Details"** to cache detailed information for offline use
 
+### Optional: Use a .env File for Credentials
+
+For easier and more secure local use, you can create a `.env` file in your project folder:
+
+```
+STEAM_API_KEY=your_steam_api_key_here
+STEAM_ID64=your_steamid64_here
+```
+
+- The app will automatically load these values and pre-fill the input fields.
+- Your `.env` file is private and should **not** be committed to git (it's in `.gitignore`).
+- You can still edit the fields in the app if you want to use different credentials.
+
 ### Daily Use (Offline Mode)
 1. **Select "Offline Mode"** in the setup section
 2. **Enter your SteamID64** (no API key needed)
@@ -207,6 +221,7 @@ deactivate
 - **Basic Info:** Name, playtime, app ID
 - **Media:** Game header image with fallback options
 - **Ratings:** Metacritic score, Steam recommendations count
+- **Achievements:** Total and completed achievements with a progress bar (Online Mode only, if supported by the game)
 - **Details:** Release date, genres, short description
 - **System:** PC requirements (minimum/recommended), DRM notice, age rating
 - **Support:** Languages, categories (Single-player, Multi-player, etc.)

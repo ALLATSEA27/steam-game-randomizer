@@ -7,6 +7,10 @@ import os
 import pickle
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+# Load .env file if present
+load_dotenv()
 
 # --- Helper functions ---
 def get_owned_games(api_key, steamid):
@@ -276,6 +280,8 @@ if 'selected_game' in st.session_state and st.session_state.selected_game:
             st.image(banner_url, use_container_width=True)
         except:
             st.info("🎮 Game image not available")
+            if 'mode' in locals() and mode == "Offline Mode":
+                st.warning("Game images are only available in Online Mode.")
 
 # Collapsible setup section
 with st.expander("⚙️ Setup & Configuration", expanded=False):
@@ -294,14 +300,27 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
     # Mode selection
     mode = st.radio("Select Mode:", ["Offline Mode", "Online Mode"])
 
+    # Get env vars
+    env_api_key = os.environ.get("STEAM_API_KEY", "")
+    env_steamid = os.environ.get("STEAM_ID64", "")
+
     # API key input (only for Online Mode)
     if mode == "Online Mode":
-        api_key = st.text_input("Steam API Key", type="password")
+        api_key = st.text_input("Steam API Key", type="password", value=env_api_key)
     else:
         api_key = None
         
     # SteamID input (needed for both modes)
-    steamid = st.text_input("SteamID64")
+    steamid = st.text_input("SteamID64", value=env_steamid)
+
+    # After steamid is set, handle Offline Mode cache loading
+    if mode == "Offline Mode" and steamid:
+        cached_games, cache_timestamp = load_cache_data(steamid)
+        if cached_games:
+            st.session_state.games = cached_games
+        else:
+            st.session_state.games = None
+            st.error("No cached data found for this SteamID. Please switch to Online Mode and fetch your library at least once.")
 
     # Note about sidebar
     st.info("💡 **Tip:** Use the sidebar for cache management")
@@ -316,13 +335,15 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
 
     if steamid and api_key:
         if mode == "Online Mode":
-            col1, col2, col3 = st.columns(3)
+            col1, col2, col3, col4 = st.columns(4)
             with col1:
                 fetch_games = st.button("🔄 Fetch Fresh Data", type="primary")
             with col2:
                 update_existing = st.button("📥 Update Existing Data")
             with col3:
                 download_all_details = st.button("📥 Download All Game Details")
+            with col4:
+                download_all_details_achievements = st.button("🏆📥 Download All Game Details & Achievements")
             
             if fetch_games:
                 with st.spinner("Fetching fresh data from Steam..."):
@@ -405,6 +426,56 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
                         else:
                             st.success(f"Successfully downloaded/cached {downloaded_count} game details!")
                         
+                    except Exception as e:
+                        st.error(f"Error during bulk download: {e}")
+
+            elif download_all_details_achievements and st.session_state.games:
+                with st.spinner("Downloading all game details and achievements (this may take a while)..."):
+                    try:
+                        total_games = len(st.session_state.games)
+                        progress_bar = st.progress(0)
+                        status_text = st.empty()
+                        downloaded_count = 0
+                        failed_count = 0
+                        achievements_count = 0
+                        for i, game in enumerate(st.session_state.games):
+                            app_id = game.get('appid')
+                            if app_id:
+                                status_text.text(f"Downloading details for: {game['name']} ({i+1}/{total_games})")
+                                # Game details
+                                existing_details = load_game_details_cache(app_id)
+                                if existing_details is None:
+                                    game_details = get_game_details(app_id)
+                                    if game_details:
+                                        save_game_details_cache(game_details, app_id)
+                                        downloaded_count += 1
+                                    else:
+                                        failed_count += 1
+                                else:
+                                    downloaded_count += 1  # Already cached
+                                # Achievements schema
+                                achievements_schema_file = os.path.join("cache/game_details", f"game_{app_id}_achievements.pkl")
+                                if not os.path.exists(achievements_schema_file):
+                                    schema = get_achievement_schema(api_key, app_id)
+                                    if schema:
+                                        with open(achievements_schema_file, 'wb') as f:
+                                            pickle.dump(schema, f)
+                                        achievements_count += 1
+                                else:
+                                    achievements_count += 1  # Already cached
+                                # Player achievement progress (new)
+                                player_achievements_file = os.path.join("cache/game_details", f"game_{app_id}_player_achievements.pkl")
+                                if not os.path.exists(player_achievements_file):
+                                    player_achievements = get_player_achievements(api_key, steamid, app_id)
+                                    if player_achievements:
+                                        with open(player_achievements_file, 'wb') as f:
+                                            pickle.dump(player_achievements, f)
+                                # Update progress
+                                progress = (i + 1) / total_games
+                                progress_bar.progress(progress)
+                        progress_bar.empty()
+                        status_text.empty()
+                        st.success(f"Downloaded/cached {downloaded_count} game details, {achievements_count} achievements schemas. {failed_count} failed.")
                     except Exception as e:
                         st.error(f"Error during bulk download: {e}")
 
@@ -494,13 +565,17 @@ if st.session_state.games:
                         # Try alternative image if header fails
                         try:
                             alt_image_url = f"https://cdn.cloudflare.steamstatic.com/steam/apps/{app_id}/capsule_184x69.jpg"
-                            st.image(alt_image_url, caption=f"{selected_game['name']} (alt)", use_container_width=True)
+                            st.image(alt_image_url, caption=selected_game['name'], use_container_width=True)
                             image_loaded = True
                         except:
                             st.info("🖼️ Game image not available")
+                            if 'mode' in locals() and mode == "Offline Mode":
+                                st.warning("Game images are only available in Online Mode.")
                     
                     if not image_loaded:
                         st.info("🖼️ Game image not available")
+                        if 'mode' in locals() and mode == "Offline Mode":
+                            st.warning("Game images are only available in Online Mode.")
                 
             with col2:
                 st.markdown(f"### {selected_game['name']}")
@@ -524,9 +599,25 @@ if st.session_state.games:
                         st.write(f"**Metacritic Score:** {score}/100")
                     
                     # Achievements display (only in Online Mode, with API key and SteamID)
-                    if app_id and api_key and steamid and mode == "Online Mode":
-                        schema = get_achievement_schema(api_key, app_id)
-                        player_achievements = get_player_achievements(api_key, steamid, app_id)
+                    if app_id:
+                        if mode == "Online Mode" and api_key and steamid:
+                            schema = get_achievement_schema(api_key, app_id)
+                            player_achievements = get_player_achievements(api_key, steamid, app_id)
+                        elif mode == "Offline Mode":
+                            # Load cached schema and player achievements if available
+                            schema = None
+                            player_achievements = None
+                            achievements_schema_file = os.path.join("cache/game_details", f"game_{app_id}_achievements.pkl")
+                            player_achievements_file = os.path.join("cache/game_details", f"game_{app_id}_player_achievements.pkl")
+                            if os.path.exists(achievements_schema_file):
+                                with open(achievements_schema_file, 'rb') as f:
+                                    schema = pickle.load(f)
+                            if os.path.exists(player_achievements_file):
+                                with open(player_achievements_file, 'rb') as f:
+                                    player_achievements = pickle.load(f)
+                        else:
+                            schema = None
+                            player_achievements = None
                         if schema and player_achievements:
                             total_achievements = len(schema)
                             completed_achievements = sum(1 for a in player_achievements if a.get("achieved") == 1)
