@@ -109,7 +109,7 @@ def load_game_details_cache(app_id):
     
     return None
 
-# Remove genre/year filter helpers
+# Filter helpers
 def filter_games_by_playtime(games, max_hours):
     """Filter games with less than max_hours of playtime"""
     filtered_games = []
@@ -118,6 +118,34 @@ def filter_games_by_playtime(games, max_hours):
         playtime_hours = playtime_minutes / 60
         if playtime_hours < max_hours:
             filtered_games.append(game)
+    return filtered_games
+
+def get_available_genres(games):
+    """Get all available genres from cached game details"""
+    genres = set()
+    for game in games:
+        app_id = game.get('appid')
+        if app_id:
+            game_details = load_game_details_cache(app_id)
+            if game_details and 'genres' in game_details:
+                for genre in game_details['genres']:
+                    genres.add(genre['description'])
+    return sorted(list(genres))
+
+def filter_games_by_genre(games, selected_genre):
+    """Filter games by selected genre"""
+    if selected_genre == "All Genres":
+        return games
+    
+    filtered_games = []
+    for game in games:
+        app_id = game.get('appid')
+        if app_id:
+            game_details = load_game_details_cache(app_id)
+            if game_details and 'genres' in game_details:
+                game_genres = [genre['description'] for genre in game_details['genres']]
+                if selected_genre in game_genres:
+                    filtered_games.append(game)
     return filtered_games
 
 def get_game_image_url(app_id):
@@ -500,6 +528,16 @@ with st.expander("⚙️ Setup & Configuration", expanded=False):
                 else:
                     st.error("No cached data found for this SteamID. Switch to Online Mode to fetch data first.")
 
+    # Debug: Show available genres (simple text display)
+    if st.session_state.games:
+        available_genres = get_available_genres(st.session_state.games)
+        if available_genres:
+            st.markdown("**🔍 Available Genres in Your Library:**")
+            genre_text = ", ".join(available_genres)
+            st.write(f"{genre_text}")
+            st.write(f"**Total:** {len(available_genres)} unique genres")
+        else:
+            st.info("No genre data found. Use Online Mode and download game details to see genres.")
 
 
 # Randomizer section
@@ -513,9 +551,21 @@ if st.session_state.games:
         max_hours = st.slider("Max playtime (hours)", 0.0, 100.0, 2.0, 0.5, key="sidebar_max_hours")
         exclude_rolled = st.checkbox("Exclude rolled games", value=st.session_state.exclude_rolled)
         st.session_state.exclude_rolled = exclude_rolled
+        
+        # Genre filter
+        st.markdown("**🎭 Genre Filter:**")
+        available_genres = get_available_genres(st.session_state.games)
+        if available_genres:
+            selected_genre = st.selectbox("Select Genre:", ["All Genres"] + available_genres, key="genre_filter")
+        else:
+            selected_genre = "All Genres"
+            st.info("No genre data available. Use Online Mode to download game details.")
     
     # Filter games by playtime
     filtered_games = filter_games_by_playtime(st.session_state.games, max_hours)
+    
+    # Filter by genre
+    filtered_games = filter_games_by_genre(filtered_games, selected_genre)
     
     # Filter out previously rolled games if option is enabled
     if exclude_rolled and st.session_state.rolled_games:
@@ -526,6 +576,13 @@ if st.session_state.games:
         filtered_games = available_games
     
     if filtered_games:
+        # Show current filter status
+        filter_info = f"🎯 **{len(filtered_games)} games available**"
+        if selected_genre != "All Genres":
+            filter_info += f" in **{selected_genre}** genre"
+        filter_info += f" with **< {max_hours} hours** playtime"
+        st.info(filter_info)
+        
         # Randomizer button - prominent placement
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
